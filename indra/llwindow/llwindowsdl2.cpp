@@ -393,6 +393,7 @@ LLWindowSDL::LLWindowSDL(LLWindowCallbacks* callbacks,
 
 	// IME - International input compositing, i.e. for Japanese / Chinese text input
 	// Preeditor means here the actual XUI input field currently in use
+	mIMEEnabled = false;
 	mPreeditor = nullptr;
 
 #if LL_X11
@@ -661,7 +662,10 @@ BOOL LLWindowSDL::createContext(int x, int y, int width, int height, int bits, B
 
 	// IME - International input compositing, i.e. for Japanese / Chinese text input
 	// Request the IME interface to show over-the-top compositing while typing
-	SDL_SetHint( SDL_HINT_IME_INTERNAL_EDITING, "1");
+	if (mIMEEnabled)
+	{
+		SDL_SetHint( SDL_HINT_IME_INTERNAL_EDITING, "1");
+	}
 
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 )
 	{
@@ -883,7 +887,12 @@ BOOL LLWindowSDL::createContext(int x, int y, int width, int height, int bits, B
 	glClear(GL_COLOR_BUFFER_BIT);
 	SDL_GL_SwapWindow(mWindow);
 
-	SDL_StartTextInput();
+	// start text input immediately when IME is not enabled
+	if (!mIMEEnabled)
+	{
+		SDL_StartTextInput();
+	}
+
 	//make sure multisampling is disabled by default
 	glDisable(GL_MULTISAMPLE_ARB);
 	
@@ -1770,11 +1779,40 @@ void LLWindowSDL::gatherInput()
 	static U64 previousTextinputTime = 0;
     SDL_Event event;
 
+	// mask to apply to the keyup/keydown modifiers to handle AltGr keys correctly
+	static U32 altGrMask = 0x00;
+
     // Handle all outstanding SDL events
     while (SDL_PollEvent(&event))
     {
         switch (event.type)
         {
+			case SDL_SYSWMEVENT:
+			{
+				XEvent e = event.syswm.msg->msg.x11.event;
+				if (e.type == KeyPress || e.type == KeyRelease)
+				{
+					// XLookupKeysym doesn't work here because of the weird way the "index" is
+					// tied to the e->state and we don't get the necessary information at this
+					// point, so we use the more expensive XLookupString which apparently knows
+					// all of the secrets inside XKeyEvent. -Zi
+
+					KeySym ks;
+					static char str[256+1];
+					XLookupString((XKeyEvent *) &e, str, 256, &ks, nullptr);
+
+					if (ks == XK_ISO_Level3_Shift)
+					{
+						altGrMask = KMOD_RALT;
+					}
+					else if (ks == XK_Alt_R)
+					{
+						altGrMask = 0x00;
+					}
+				}
+				break;
+			}
+
 			case SDL_MOUSEWHEEL:
 				if( event.wheel.y != 0 )
 					mCallbacks->handleScrollWheel(this, -event.wheel.y);
@@ -1794,6 +1832,10 @@ void LLWindowSDL::gatherInput()
 			{
 				auto string = utf8str_to_utf16str( event.text.text );
 				mKeyModifiers = gKeyboard->currentMask( FALSE );
+				if (altGrMask)
+				{
+					mKeyModifiers &= ~MASK_ALT;
+				}
 				mInputType = "textinput";
 				for( auto key: string )
 				{
@@ -1812,7 +1854,7 @@ void LLWindowSDL::gatherInput()
 
             case SDL_KEYDOWN:
 				mKeyVirtualKey = event.key.keysym.sym;
-				mKeyModifiers = event.key.keysym.mod;
+				mKeyModifiers = event.key.keysym.mod & (~altGrMask);
 				mInputType = "keydown";
 
 				// treat all possible Enter/Return keys the same
@@ -1821,7 +1863,7 @@ void LLWindowSDL::gatherInput()
 					mKeyVirtualKey = SDLK_RETURN;
 				}
 
-				if (mKeyVirtualKey == SDLK_RETURN)
+				if (mKeyVirtualKey == SDLK_RETURN && mIMEEnabled)
 				{
 					// block spurious enter key events that break up IME entered lines in teh wrong places
 					U64 eventTimeDiff = LLFrameTimer::getTotalTime() - previousTextinputTime;
@@ -1854,7 +1896,7 @@ void LLWindowSDL::gatherInput()
 
             case SDL_KEYUP:
 				mKeyVirtualKey = event.key.keysym.sym;
-				mKeyModifiers = event.key.keysym.mod;
+				mKeyModifiers = event.key.keysym.mod & (~altGrMask);
 				mInputType = "keyup";
 
 				// treat all possible Enter/Return keys the same
@@ -2670,11 +2712,32 @@ void LLWindowSDL::toggleVSync(bool enable_vsync)
 }
 // </FS:Zi>
 
+void LLWindowSDL::enableIME(bool b)
+{
+	mIMEEnabled = b;
+
+	if (mIMEEnabled)
+	{
+		SDL_SetHint( SDL_HINT_IME_INTERNAL_EDITING, "1");
+		SDL_StopTextInput();
+	}
+	else
+	{
+		SDL_SetHint( SDL_HINT_IME_INTERNAL_EDITING, "0");
+		SDL_StartTextInput();
+	}
+}
+
 // IME - International input compositing, i.e. for Japanese / Chinese text input
 // Put the IME window at the right place (near current text input).
 // Point coordinates should be the top of the current text line.
 void LLWindowSDL::setLanguageTextInput(const LLCoordGL& position)
 {
+	if (!mIMEEnabled)
+	{
+		return;
+	}
+
 	LLCoordWindow win_pos;
 	convertCoords( position, &win_pos );
 
@@ -2690,6 +2753,11 @@ void LLWindowSDL::setLanguageTextInput(const LLCoordGL& position)
 // IME - International input compositing, i.e. for Japanese / Chinese text input
 void LLWindowSDL::allowLanguageTextInput(LLPreeditor *preeditor, BOOL b)
 {
+	if (!mIMEEnabled)
+	{
+		return;
+	}
+
 	if (preeditor != mPreeditor && !b)
 	{
 		// This condition may occur with a call to
