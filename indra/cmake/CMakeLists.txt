@@ -32,6 +32,7 @@ set(cmake_SOURCE_FILES
     FindJsonCpp.cmake
     FindNDOF.cmake
     FindOpenJPEG.cmake
+	FindnvJPEG2k.cmake
     FindSCP.cmake
     FindURIPARSER.cmake
     FindXmlRpcEpi.cmake
@@ -55,6 +56,7 @@ set(cmake_SOURCE_FILES
     LLCommon.cmake
     LLCrashLogger.cmake
     LLImage.cmake
+	LLImageJ2CnvJPEG2k.cmake
     LLImageJ2COJ.cmake
     LLInventory.cmake
     LLKDU.cmake

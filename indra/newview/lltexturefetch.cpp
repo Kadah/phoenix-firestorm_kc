@@ -2788,6 +2788,16 @@ bool LLTextureFetch::createRequest(FTType f_type, const std::string& url, const 
 		desired_discard = MAX_DISCARD_LEVEL;
 	}
 
+	{
+		// ND HACK/TODO: When not using KDU force a full fetch
+		auto info = LLImageJ2C::getEngineInfo();
+		if (info.find("KDU") != 0)
+		{
+			desired_discard = 0;
+			desired_size = MAX_IMAGE_DATA_SIZE;
+		}
+	}
+
 	
 	if (worker)
 	{

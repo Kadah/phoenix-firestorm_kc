@@ -83,6 +83,8 @@ protected:
 	friend class LLImageJ2CImpl;
 	friend class LLImageJ2COJ;
 	friend class LLImageJ2CKDU;
+	friend class LLImageJ2CJasper;
+	friend class LLImageJ2CnvJPEG2k;
 	friend class LLImageCompressionTester;
 	void decodeFailed();
 	void updateRawDiscardLevel();

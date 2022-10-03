@@ -1,0 +1,55 @@
+# -*- cmake -*-
+
+# - Find nvJPEG2k
+# Find the nvJPEG2k includes and library
+# This module defines
+#  NVJPEG2K_INCLUDE_DIR, where to find nvjpeg2k.h, etc.
+#  NVJPEG2K_LIBRARIES, the libraries needed to use nvJPEG2k.
+#  NVJPEG2K_FOUND, If false, do not try to use nvJPEG2k.
+# also defined, but not for general use are
+#  NVJPEG2K_LIBRARY, where to find the nvJPEG2k library.
+
+FIND_PATH(NVJPEG2K_INCLUDE_DIR nvjpeg2k.h
+	/usr/local/include
+	/usr/include
+)
+
+FIND_PATH(NPP_INCLUDE_DIR npp.h
+	/usr/local/cuda/targets/x86_64-linux/include
+	/usr/local/include
+	/usr/include
+)
+
+SET(NVJPEG2K_NAMES ${NVJPEG2K_NAMES} libnvjpeg2k.so)
+FIND_LIBRARY(NVJPEG2K_LIBRARY
+	NAMES ${NVJPEG2K_NAMES}
+	PATHS
+	/usr/lib
+	/usr/local/lib
+	/usr/lib/x86_64-linux-gnu
+	/usr/local/cuda/targets/x86_64-linux/lib
+)
+
+IF (NVJPEG2K_LIBRARY AND NVJPEG2K_INCLUDE_DIR AND NPP_INCLUDE_DIR)
+	SET(NVJPEG2K_LIBRARIES ${NVJPEG2K_LIBRARY})
+	SET(NVJPEG2K_FOUND "YES")
+ELSE (NVJPEG2K_LIBRARY AND NVJPEG2K_INCLUDE_DIR AND NPP_INCLUDE_DIR)
+	SET(NVJPEG2K_FOUND "NO")
+ENDIF (NVJPEG2K_LIBRARY AND NVJPEG2K_INCLUDE_DIR AND NPP_INCLUDE_DIR)
+
+
+IF (NVJPEG2K_FOUND)
+	IF (NOT OPENJPEG_FIND_QUIETLY)
+		MESSAGE(STATUS "Found nvJPEG2k: ${NVJPEG2K_LIBRARIES}")
+	ENDIF (NOT OPENJPEG_FIND_QUIETLY)
+ELSE (NVJPEG2K_FOUND)
+	IF (NVJPEG2K_FIND_REQUIRED)
+		MESSAGE(FATAL_ERROR "Could not find nvJPEG2k library")
+	ENDIF (NVJPEG2K_FIND_REQUIRED)
+ENDIF (NVJPEG2K_FOUND)
+
+MARK_AS_ADVANCED(
+	NVJPEG2K_LIBRARY
+	NVJPEG2K_INCLUDE_DIR
+	NPP_INCLUDE_DIR
+)

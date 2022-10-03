@@ -64,7 +64,11 @@ add_library (llimage ${llimage_SOURCE_FILES})
 # Sort by high-level to low-level
 if (USE_KDU)
     target_link_libraries(llimage ${LLKDU_LIBRARIES})
-else (USE_KDU)
+elseif (USE_JASPER)
+    target_link_libraries(llimage llimagej2cjasper)
+elseif (USE_NVJPEG2K)
+    target_link_libraries(llimage llimagej2cnvjpeg2k)
+else()
     target_link_libraries(llimage ${LLIMAGEJ2COJ_LIBRARIES})
 endif (USE_KDU)
 

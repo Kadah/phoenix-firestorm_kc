@@ -1090,7 +1090,7 @@
          label_width="198"
          layout="topleft"
          left="10"
-         max_val="64"
+         max_val="1024"
          min_val="0"
          name="image_decode_threads"
          tool_tip="The number of threads to use for decoding images. 0 = Auto, 1 = Synchronous, 2+ = user specified. (0 or 1 are recommended)"
