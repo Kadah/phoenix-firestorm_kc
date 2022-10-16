@@ -602,7 +602,7 @@ bool LLImageJ2CnvJPEG2k::decodeImpl(LLImageJ2C &base, LLImageRaw &raw_image, F32
 		}
 
 		LL_WARNS("nvJPEG2k")
-		<< "\nTexture failed to load: "
+		<< "Texture failed to load: "
 		<< " discard used: " << discard << ", asked: " << discard_level
 		<< " data size: " << base.getDataSize()
 
