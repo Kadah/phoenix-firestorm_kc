@@ -32,7 +32,7 @@
 #include "llpointer.h"
 #include "llmath.h"
 #include "llkdumem.h"
-// #include "fstelemetry.h"	// <FS:Beq> instrument image decodes
+
 #define kdu_xxxx "kdu_block_coding.h"
 #include "include_kdu_xxxx.h"
 
@@ -139,9 +139,6 @@ private:
 // Kakadu specific implementation
 //
 void set_default_colour_weights(kdu_params *siz);
-// <FS:CR> Various missing prototypes
-LLImageJ2CImpl* fallbackCreateLLImageJ2CImpl();
-// </FS:CR>
 
 // Factory function: see declaration in llimagej2c.cpp
 LLImageJ2CImpl* fallbackCreateLLImageJ2CImpl()
@@ -167,13 +164,7 @@ private:
 	bool mUseYCC;
 	kdu_dims mDims;
 	kdu_sample_allocator mAllocator;
-
-	// <FS:ND> KDU 8.0.1 compatibiliy
-#if KDU_MAJOR_VERSION >= 8
 	kdu_push_pull_params mPushPullParams;
-#endif
-	// </FS:ND>
-	
 	kdu_tile_comp mComps[4];
 	kdu_line_buf mLines[4];
 	kdu_pull_ifc mEngines[4];
@@ -287,7 +278,6 @@ void transfer_bytes(kdu_byte *dest, kdu_line_buf &src, int gap, int precision);
 // as well, when that still existed, with keep_codestream true and MODE_FAST.
 void LLImageJ2CKDU::setupCodeStream(LLImageJ2C &base, bool keep_codestream, ECodeStreamMode mode)
 {
-	LL_PROFILE_ZONE_SCOPED_CATEGORY_TEXTURE;	// <FS:Beq> instrument image decodes
 	S32 data_size = base.getDataSize();
 	S32 max_bytes = (base.getMaxBytes() ? base.getMaxBytes() : data_size);
 
@@ -311,7 +301,7 @@ void LLImageJ2CKDU::setupCodeStream(LLImageJ2C &base, bool keep_codestream, ECod
 
 	if (mInputp)
 	{
-		// This is LLKDUMemSource::reset(), not boost::scoped_ptr::reset().
+		// This is LLKDUMemSource::reset(), not std::unique_ptr::reset().
 		mInputp->reset();
 	}
 
@@ -321,12 +311,7 @@ void LLImageJ2CKDU::setupCodeStream(LLImageJ2C &base, bool keep_codestream, ECod
 	// *TODO: This seems to be wrong. The base class should have no idea of
 	// how j2c compression works so no good way of computing what's the byte
 	// range to be used.
-#if (KDU_MAJOR_VERSION*10000 + KDU_MINOR_VERSION*100 + KDU_PATCH_VERSION) >= 80200
-	mCodeStreamp->set_max_bytes(max_bytes, false);
-#else
 	mCodeStreamp->set_max_bytes(max_bytes,true);
-#endif
-
 
 	//	If you want to flip or rotate the image for some reason, change
 	// the resolution, or identify a restricted region of interest, this is
@@ -442,7 +427,6 @@ bool LLImageJ2CKDU::initEncode(LLImageJ2C &base, LLImageRaw &raw_image, int bloc
 // decodeImpl() usage matters for production.
 bool LLImageJ2CKDU::initDecode(LLImageJ2C &base, LLImageRaw &raw_image, F32 decode_time, ECodeStreamMode mode, S32 first_channel, S32 max_channel_count, int discard_level, int* region)
 {
-	LL_PROFILE_ZONE_SCOPED_CATEGORY_TEXTURE;	// <FS:Beq> instrument image decodes
 	base.resetLastError();
 
 	// *FIX: kdu calls our callback function if there's an error, and then bombs.
@@ -503,7 +487,7 @@ bool LLImageJ2CKDU::initDecode(LLImageJ2C &base, LLImageRaw &raw_image, F32 deco
 		base.setLastError(msg.what());
 		return false;
 	}
-	catch (kdu_exception kdu_value)
+	catch (const kdu_exception& kdu_value)
 	{
 		// KDU internally throws kdu_exception. It's possible that such an
 		// exception might leak out into our code. Catch kdu_exception
@@ -540,15 +524,10 @@ bool LLImageJ2CKDU::decodeImpl(LLImageJ2C &base, LLImageRaw &raw_image, F32 deco
 			return true; // done
 		}
 	}
-
-	// <FS:Techwolf Lupindo> texture comment metadata reader
-	// <FS:LO> get_text() will return a NULL pointer if no comment exists, but will return a proper null terminated string even if the comment is ""
-	if(mCodeStreamp->get_comment().get_text())
-	{
-		raw_image.mComment.assign(mCodeStreamp->get_comment().get_text());
-	}
-	// </FS:LO>
-	// </FS:Techwolf Lupindo>
+	
+	raw_image.mComment.assign(mCodeStreamp->get_comment().exists()
+							  ? mCodeStreamp->get_comment().get_text()
+							  : LLStringUtil::null);
 
 	// These can probably be grabbed from what's saved in the class.
 	kdu_dims dims;
@@ -622,7 +601,7 @@ bool LLImageJ2CKDU::decodeImpl(LLImageJ2C &base, LLImageRaw &raw_image, F32 deco
 				cleanupCodeStream();
 				return true; // done
 			}
-			catch (kdu_exception kdu_value)
+			catch (const kdu_exception& kdu_value)
 			{
 				// KDU internally throws kdu_exception. It's possible that such an
 				// exception might leak out into our code. Catch kdu_exception
@@ -826,7 +805,7 @@ bool LLImageJ2CKDU::encodeImpl(LLImageJ2C &base, const LLImageRaw &raw_image, co
 		base.setLastError(msg.what());
 		return false;
 	}
-	catch (kdu_exception kdu_value)
+	catch (const kdu_exception& kdu_value)
 	{
 		// KDU internally throws kdu_exception. It's possible that such an
 		// exception might leak out into our code. Catch kdu_exception
@@ -860,7 +839,7 @@ bool LLImageJ2CKDU::getMetadata(LLImageJ2C &base)
 		base.setLastError(msg.what());
 		return false;
 	}
-	catch (kdu_exception kdu_value)
+	catch (const kdu_exception& kdu_value)
 	{
 		// KDU internally throws kdu_exception. It's possible that such an
 		// exception might leak out into our code. Catch kdu_exception
@@ -1081,8 +1060,7 @@ void LLImageJ2CKDU::findDiscardLevelsBoundaries(LLImageJ2C &base)
 		// Clean-up
 		cleanupCodeStream();
 		codestream_out.destroy();
-		delete[] output_buffer;
-		delete[] layer_bytes; // <FS:ND/> Don't leak those
+		delete[] output_buffer;	
 	}
 	return;
 }
@@ -1128,12 +1106,8 @@ void set_default_colour_weights(kdu_params *siz)
 		return;
 	}
 
-// <FS:Ansariel> Fix image encoding for KDU >= 8.0.4
-#if (KDU_MAJOR_VERSION*10000 + KDU_MINOR_VERSION*100 + KDU_PATCH_VERSION) >= 80004
 	cod = siz->access_cluster(ENC_params);
 	assert(cod != NULL);
-#endif
-// </FS:Ansariel>
 
 	float weight;
 	if (cod->get(Clev_weights,0,0,weight) || cod->get(Cband_weights,0,0,weight))
@@ -1335,9 +1309,6 @@ LLKDUDecodeState::LLKDUDecodeState(kdu_tile tile, kdu_byte *buf, S32 row_gap,
 		}
 		bool use_shorts = (mComps[c].get_bit_depth(true) <= 16);
 		mLines[c].pre_create(&mAllocator,mDims.size.x,mReversible[c],use_shorts,0,0);
-
-		// <FS:ND> KDU 8.0.1 compatibiliy
-#if KDU_MAJOR_VERSION >= 8
 		if (res.which() == 0) // No DWT levels used
 		{
 			mEngines[c] = kdu_decoder(res.access_subband(LL_BAND),&mAllocator,mPushPullParams,use_shorts);
@@ -1346,18 +1317,6 @@ LLKDUDecodeState::LLKDUDecodeState(kdu_tile tile, kdu_byte *buf, S32 row_gap,
 		{
 			mEngines[c] = kdu_synthesis(res,&mAllocator,mPushPullParams,use_shorts);
 		}
-#else
-		// </FS:ND>
-		if (res.which() == 0) // No DWT levels used
-		{
-			mEngines[c] = kdu_decoder(res.access_subband(LL_BAND),&mAllocator,use_shorts);
-		}
-		else
-		{
-			mEngines[c] = kdu_synthesis(res,&mAllocator,use_shorts);
-		}
-#endif // <FS:ND/> KDU 8.0.1 compatibiliy
-				
 	}
 	mAllocator.finalize(*codestreamp); // Actually creates buffering resources
 	for (c = 0; c < mNumComponents; c++)

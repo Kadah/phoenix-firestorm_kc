@@ -21,13 +21,15 @@ if (USE_KDU)
   include(Prebuilt)
   use_prebuilt_binary(kdu)
   if (WINDOWS)
-    target_link_libraries( ll::kdu INTERFACE kdu${ND_KDU_SUFFIX}.lib)
+    target_link_libraries( ll::kdu INTERFACE
+      debug ${ARCH_PREBUILT_DIRS_DEBUG}/kdud.lib
+      optimized ${ARCH_PREBUILT_DIRS_RELEASE}/kdu.lib
+      )
   else (WINDOWS)
-    target_link_libraries( ll::kdu INTERFACE libkdu${ND_KDU_SUFFIX}.a)
+    target_link_libraries( ll::kdu INTERFACE libkdu.a)
   endif (WINDOWS)
 
   target_include_directories( ll::kdu SYSTEM INTERFACE
-          ${AUTOBUILD_INSTALL_DIR}/include/kdu
-          ${LIBS_OPEN_DIR}/llkdu
+          ${LIBS_PREBUILT_DIR}/include/kdu
           )
 endif (USE_KDU)

@@ -28,9 +28,9 @@
 #define LL_LLKDUMEM_H
 
 // Support classes for reading and writing from memory buffers in KDU
-//#ifdef LL_DARWIN
-//#define KDU_NO_THREADS
-//#endif
+#ifndef KDU_NO_THREADS
+#define KDU_NO_THREADS
+#endif
 
 #define kdu_xxxx "kdu_image.h"
 #include "include_kdu_xxxx.h"
@@ -57,9 +57,7 @@ public:
 		mCurPos = 0;
 	}
 
-	~LLKDUMemSource()
-	{
-	}
+	~LLKDUMemSource() = default;
 
 	int read(kdu_core::kdu_byte *buf, int num_bytes)
 	{
@@ -97,9 +95,7 @@ public:
 		mOutputSize = &output_size;
 	}
 
-	~LLKDUMemTarget()
-	{
-	}
+	~LLKDUMemTarget() = default;
 
 	bool write(const kdu_core::kdu_byte *buf, int num_bytes)
 	{
