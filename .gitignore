@@ -111,3 +111,4 @@ firestorm.code-workspace
 
 .cache/clangd/index/
 *-compiled.glsl
+.directory

@@ -81,8 +81,6 @@ U8* LLImageBase::reallocateData(S32 ) { return NULL; }
 void LLImageBase::sanityCheck() { }
 void LLImageBase::setSize(S32 , S32 , S32 ) { }
 
-LLImageJ2CImpl::~LLImageJ2CImpl() { }
-
 LLImageFormatted::LLImageFormatted(S8 ) { }
 LLImageFormatted::~LLImageFormatted() { }
 U8* LLImageFormatted::allocateData(S32 ) { return NULL; }
@@ -98,7 +96,6 @@ void LLImageFormatted::sanityCheck() { }
 void LLImageFormatted::setLastError(const std::string& , const std::string& ) { }
 
 LLImageJ2C::LLImageJ2C() : LLImageFormatted(IMG_CODEC_J2C), mRate(DEFAULT_COMPRESSION_RATE) { }
-LLImageJ2C::~LLImageJ2C() { }
 S32 LLImageJ2C::calcDataSize(S32 ) { return 0; }
 S32 LLImageJ2C::calcDiscardLevelBytes(S32 ) { return 0; }
 S32 LLImageJ2C::calcHeaderSize() { return 0; }
@@ -139,13 +136,14 @@ int kdu_tile_comp::get_bit_depth(bool ) { return 8; }
 bool kdu_tile_comp::get_reversible() { return false; }
 int kdu_tile_comp::get_num_resolutions() { return 1; }
 kdu_subband kdu_resolution::access_subband(int ) { kdu_subband a; return a; }
-void kdu_resolution::get_dims(kdu_dims& ) { }
-int kdu_resolution::which() { return 0; }
-int kdu_resolution::get_valid_band_indices(int &) { return 1; }
-kdu_synthesis::kdu_synthesis(kdu_resolution, kdu_sample_allocator*, bool, float, kdu_thread_env*, kdu_thread_queue*) { }
+void kdu_resolution::get_dims(kdu_dims& ) const { }
+int kdu_resolution::which() const { return 0; }
+int kdu_resolution::get_valid_band_indices(int &) const { return 1; }
+kdu_synthesis::kdu_synthesis(kdu_resolution, kdu_sample_allocator*, kdu_push_pull_params&, bool, float, kdu_thread_env*, kdu_thread_queue*) { }
 //kdu_params::kdu_params(const char*, bool, bool, bool, bool, bool) { }
-kdu_params::kdu_params(const char*, bool, bool, bool, bool, bool, kd_core_local::kd_coremem*) {}
+kdu_params::kdu_params(const char*, bool, bool, bool, bool, bool) {}
 kdu_params::~kdu_params() { }
+void kdu_params::destroy() { }
 void kdu_params::set(const char* , int , int , bool ) { }
 void kdu_params::set(const char* , int , int , int ) { }
 void kdu_params::finalize_all(bool ) { }
@@ -191,10 +189,12 @@ bool kdu_codestream::ready_for_flush(kdu_thread_env*) { return false; }
 siz_params* kdu_codestream::access_siz() { return NULL; }
 kdu_tile kdu_codestream::open_tile(kdu_coords , kdu_thread_env* ) { kdu_tile a; return a; }
 kdu_codestream_comment kdu_codestream::add_comment(kdu_thread_env*) { kdu_codestream_comment a; return a; }
+kdu_codestream_comment  kdu_codestream::get_comment(kdu_codestream_comment) { kdu_codestream_comment a; return a; };
 void kdu_subband::close_block(kdu_block*, kdu_thread_env*) { }
 void kdu_subband::get_valid_blocks(kdu_dims &indices) const { }
 kdu_block * kdu_subband::open_block(kdu_coords, int *, kdu_thread_env *, int, bool) { return NULL; }
 bool kdu_codestream_comment::put_text(const char*) { return false; }
+const char *kdu_codestream_comment::get_text() { return nullptr; };
 void kdu_customize_warnings(kdu_message*) { }
 void kdu_customize_errors(kdu_message*) { }
 kdu_long kdu_multi_analysis::create(
@@ -209,20 +209,23 @@ kdu_long kdu_multi_analysis::create(
     const kdu_push_pull_params*,
     kdu_membroker*) { return kdu_long(0); }
 void kdu_multi_analysis::destroy(kdu_thread_env *) {}
+siz_params::siz_params() : kdu_params(NULL, false, false, false, false, false) { }
 siz_params::siz_params(kd_core_local::kd_coremem*) : kdu_params(NULL, false, false, false, false, false) { }
 siz_params::~siz_params() {}
 void siz_params::finalize(bool ) { }
 void siz_params::copy_with_xforms(kdu_params*, int, int, bool, bool, bool) { }
-int siz_params::write_marker_segment(kdu_output*, kdu_params*, int) { return 0; }
+int siz_params::write_marker_segment(kdu_output*, kdu_params*, int, int&) { return 0; }
 bool siz_params::check_marker_segment(kdu_uint16, int, kdu_byte a[], int&) { return false; }
-bool siz_params::read_marker_segment(kdu_uint16, int, kdu_byte a[], int) { return false; }
+int siz_params::read_marker_segment(kdu_uint16 code, int num_bytes, kdu_byte bytes[], int tpart_idx) { return false; }
 kdu_decoder::kdu_decoder(
     kdu_subband subband,
     kdu_sample_allocator*,
+	kdu_push_pull_params&,
     bool, float, int,
     kdu_thread_env*,
     kdu_thread_queue*,
     int, float*) {}
+
 kdu_sample_allocator::~kdu_sample_allocator() {}
 void kdu_sample_allocator::do_finalize(kdu_codestream) {}
 void (*kdu_convert_ycc_to_rgb_rev16)(kdu_int16*,kdu_int16*,kdu_int16*,int);

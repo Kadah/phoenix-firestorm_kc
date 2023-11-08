@@ -2736,6 +2736,7 @@ name="Command_360_Capture_Label">360° Snapshot</string>
   <string name="Command_RFO_Label">Show Friends Only</string>
   <string name="Command_DAO_Label">Derender Animesh</string>
   <string name="Command_Beacons_Label">Beacons</string>
+  <string name="Command_EditHoverHeight_Label">Hover Height</string>
 
   <string 
 name="Command_360_Capture_Tooltip">Capture a 360° equirectangular image</string>
@@ -2801,6 +2802,7 @@ name="Command_360_Capture_Tooltip">Capture a 360° equirectangular image</string
   <string name="Command_RFO_Tooltip">Show only your friends in the viewer, all other avatars will be removed. Once enabled a TP is required to restore visibility of others.</string>
   <string name="Command_DAO_Tooltip">Derender Animated Objects (aka Animesh) - Temporarily derenders all currently visible Animesh (attached and free roaming). Derendered animesh will reappear after a TP</string>
   <string name="Command_Beacons_Tooltip">Show beacons</string>
+  <string name="Command_EditHoverHeight_Tooltip">Edit Hover Height</string>
 
   <string name="Toolbar_Bottom_Tooltip">currently in your bottom toolbar</string>
   <string name="Toolbar_Left_Tooltip"  >currently in your left toolbar</string>
@@ -3252,6 +3254,7 @@ Your current position: [AVATAR_POS]
   <string name="mode_settings_phoenix.xml">Phoenix</string>
   <string name="mode_settings_v3.xml">[VIEWER_GENERATION]</string>
   <string name="mode_settings_hybrid.xml">Hybrid</string>
+  <string name="mode_settings_latency.xml">Latency</string>
   <string name="mode_settings_text.xml">Text</string>
 
   <string name="Asset_Uploading">Uploading...
